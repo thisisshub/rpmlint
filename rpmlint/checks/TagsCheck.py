@@ -99,7 +99,6 @@ class TagsCheck(AbstractCheck):
         rpm_license = pkg[rpm.RPMTAG_LICENSE]
         name = pkg.name
         deps = pkg.requires + pkg.prereq
-        devel_depend = False
         is_devel = FilesCheck.devel_regex.search(name)
         is_source = pkg.is_source
 
@@ -109,7 +108,7 @@ class TagsCheck(AbstractCheck):
         self._check_non_standard_release_extension(pkg, release)
         self._check_no_epoch_tag(pkg, epoch)
         self._check_no_epoch_in_tags(pkg)
-        self._check_no_epoch_in_dependency(pkg, deps, devel_depend, is_devel, is_source)
+        self._check_no_epoch_in_dependency(pkg, deps, is_devel, is_source)
         self._unexpanded_macros(pkg, 'Name', name)
         self._check_no_name_tag(pkg, name, is_devel, is_source, deps, epoch, version)
 
@@ -284,8 +283,7 @@ class TagsCheck(AbstractCheck):
                     self.output.add_info('W', pkg, 'no-epoch-in-{}'.format(tag),
                                          Pkg.formatRequire(*var))
 
-    def _check_no_epoch_in_dependency(self, pkg, deps, is_source,
-                                      devel_depend, is_devel):
+    def _check_no_epoch_in_dependency(self, pkg, deps, is_source, is_devel):
         """This method contains checks
         - no-epoch-in-dependency,
         - invalid-dependency,
@@ -293,6 +291,7 @@ class TagsCheck(AbstractCheck):
         - devel-dependency,
         - explicit-devel-dependency."""
 
+        devel_depend = False
         for dep in deps:
             value = Pkg.formatRequire(*dep)
             # Check if a package has a versioned dependency in spec file without Epoch: tag
