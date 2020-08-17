@@ -102,6 +102,13 @@ class TagsCheck(AbstractCheck):
         is_devel = FilesCheck.devel_regex.search(name)
         is_source = pkg.is_source
 
+        # List of words to ignore in spell check
+        ignored_words = set()
+        for pf in pkg.files:
+            ignored_words.update(pf.split('/'))
+        for tag in ('provides', 'requires', 'conflicts', 'obsoletes'):
+            ignored_words.update((var[0] for var in 'pkg.' + str(tag)))
+
         # Run checks for whole package
         self._check_invalid_packager(pkg)
         self._check_invalid_version_and_no_version_tag(pkg, version)
@@ -111,14 +118,6 @@ class TagsCheck(AbstractCheck):
         self._check_no_epoch_in_dependency(pkg, deps, is_devel, is_source)
         self._unexpanded_macros(pkg, 'Name', name)
         self._check_no_name_tag(pkg, name, is_devel, is_source, deps, epoch, version)
-
-        # List of words to ignore in spell check
-        ignored_words = set()
-        for pf in pkg.files:
-            ignored_words.update(pf.split('/'))
-        for tag in ('provides', 'requires', 'conflicts', 'obsoletes'):
-            ignored_words.update((var[0] for var in 'pkg.' + str(tag)))
-
         self._check_summary_tag(pkg, summary, langs, ignored_words)
         self._check_description_tag(pkg, description, langs, ignored_words)
         self._check_group_tag(pkg, group)
