@@ -231,10 +231,7 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('E', pkg, 'no-version-tag')
 
     def _check_non_standard_release_extension(self, pkg, release):
-        """This method contains checks
-        - not-standard-release-extension,
-        - no-release-tag."""
-
+        """Contain check, not-standard-release-extension, no-release-tag."""
         if release:
             self._unexpanded_macros(pkg, 'Release', release)
             # [This check is dynamically produced]
@@ -246,10 +243,7 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('E', pkg, 'no-release-tag')
 
     def _check_no_epoch_tag(self, pkg, epoch):
-        """This method contains checks
-        - no-epoch-tag,
-        - unreasonable-epoch."""
-
+        """Contain check no-epoch-tag, unreasonable-epoch."""
         if epoch is None:
             # Check if a package does not contain an Epoch: tag
             if self.use_epoch:
@@ -272,7 +266,7 @@ class TagsCheck(AbstractCheck):
                                          Pkg.formatRequire(*var))
 
     def _check_multiple_dependencies(self, pkg, deps, is_source, is_devel):
-        """This method contains checks
+        """Contain multiple check,
         - no-epoch-in-dependency,
         - invalid-dependency,
         - invalid-build-requires,
@@ -416,11 +410,7 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('E', pkg, 'no-summary-tag')
 
     def _check_description_tag(self, pkg, description, langs, ignored_words):
-        """This method contains checks
-        - description-shorter-than-summary
-        - no-description-tag."""
-
-        # Check if a package has a description shorter than Summary
+        """Contain check description-shorter-than-summary, no-description-tag."""
         if description:
             if not langs:
                 self._unexpanded_macros(pkg, '%description', description)
@@ -428,18 +418,16 @@ class TagsCheck(AbstractCheck):
                 for lang in langs:
                     self.check_description(pkg, lang, ignored_words)
 
+            # Check if a package has a description shorter than Summary
             if len(description) < len(pkg[rpm.RPMTAG_SUMMARY]):
                 self.output.add_info('W', pkg, 'description-shorter-than-summary')
-        # Check if a package does not have a %description tag in spec file
         else:
+            # Check if a package does not have a %description tag in spec file
             self.output.add_info('E', pkg, 'no-description-tag')
 
     def _check_group_tag(self, pkg, group):
-        """This method contains checks
-        - no-group-tag,
-        - devel-package-with-non-devel-group,
-        - non-standard-group."""
-
+        """Contain check no-group-tag, devel-package-with-non-devel-group,
+        non-standard-group."""
         self._unexpanded_macros(pkg, 'Group', group)
         # Check if a package does not have a group tag
         if not group:
@@ -454,9 +442,7 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('W', pkg, 'non-standard-group', group)
 
     def _check_buildhost_tag(self, pkg, buildhost):
-        """This method contains checks
-        - no-buildhost-tag,
-        - invalid-buildhost."""
+        """Contain check no-buildhost-tag, invalid-buildhost."""
         self._unexpanded_macros(pkg, 'BuildHost', buildhost)
         # Check if a package has no buildhost tag
         if not buildhost:
@@ -468,12 +454,12 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('W', pkg, 'invalid-buildhost', buildhost)
 
     def _check_changelog_tag(self, pkg, changelog, version, release, name, epoch):
-        """This method contains checks
+        """Contain multiple check,
         - no-changelogname-tag,
         - no-version-in-last-changelog,
         - incoherent-version-in-changelog,
         - tag-not-utf8,
-        - forbidden-controlchar-found
+        - forbidden-controlchar-found,
         - changelog-time-overflow,
         - changelog-time-in-future."""
 
@@ -535,10 +521,7 @@ class TagsCheck(AbstractCheck):
                                          time.strftime('%Y-%m-%d', time.gmtime(clt)))
 
     def _check_license(self, pkg, rpm_license):
-        """This method contains checks
-        - no-license,
-        - invalid-license-exception,
-        - invalid-license."""
+        """Contain check no-license, invalid-license-exception, invalid-license."""
 
         def split_license(text):
             return (x.strip() for x in
@@ -577,10 +560,7 @@ class TagsCheck(AbstractCheck):
                 self._unexpanded_macros(pkg, 'License', rpm_license)
 
     def _check_url(self, pkg):
-        """This methods contains checks
-        - invalid-url,
-        - no-url-tag."""
-
+        """Contain check invalid-url, no-url-tag."""
         for tag in ('URL', 'DistURL', 'BugURL'):
             if hasattr(rpm, 'RPMTAG_{}'.format(tag.upper())):
                 url = byte_to_string(pkg[getattr(rpm, 'RPMTAG_{}'.format(tag.upper()))])
