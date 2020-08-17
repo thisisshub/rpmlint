@@ -123,16 +123,7 @@ class TagsCheck(AbstractCheck):
         self._check_group_tag(pkg, group)
         self._check_buildhost_tag(pkg, buildhost)
         self._check_changelog_tag(pkg, changelog, version, release, name, epoch)
-
-        def split_license(text):
-            return (x.strip() for x in
-                    (i for i in license_regex.split(text) if i))
-
-        def split_license_exception(text):
-            x, y = license_exception_regex.split(text)[1:3] or (text, '')
-            return x.strip(), y.strip()
-
-        self._check_license(pkg, rpm_license, split_license_exception, split_license)
+        self._check_license(pkg, rpm_license)
         self._check_url(pkg)
 
         obs_names = [x[0] for x in pkg.obsoletes]
@@ -538,11 +529,19 @@ class TagsCheck(AbstractCheck):
                     self.output.add_info('E', pkg, 'changelog-time-in-future',
                                          time.strftime('%Y-%m-%d', time.gmtime(clt)))
 
-    def _check_license(self, pkg, rpm_license, split_license_exception, split_license):
+    def _check_license(self, pkg, rpm_license):
         """This method contains checks
         - no-license,
         - invalid-license-exception,
         - invalid-license."""
+
+        def split_license(text):
+            return (x.strip() for x in
+                    (i for i in license_regex.split(text) if i))
+
+        def split_license_exception(text):
+            x, y = license_exception_regex.split(text)[1:3] or (text, '')
+            return x.strip(), y.strip()
 
         # Check if a package spec file conatins a License: tag
         if not rpm_license:
