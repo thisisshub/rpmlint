@@ -126,10 +126,9 @@ class TagsCheck(AbstractCheck):
         self._check_license(pkg, rpm_license)
         self._check_url(pkg)
 
-        obs_names = [x[0] for x in pkg.obsoletes]
         prov_names = [x[0] for x in pkg.provides]
 
-        self._check_obsolete_not_provided(pkg, prov_names, obs_names)
+        self._check_obsolete_not_provided(pkg, prov_names)
 
         for dep_token in pkg.obsoletes:
             value = Pkg.formatRequire(*dep_token)
@@ -593,9 +592,10 @@ class TagsCheck(AbstractCheck):
                 elif tag == 'URL':
                     self.output.add_info('W', pkg, 'no-url-tag')
 
-    def _check_obsolete_not_provided(self, pkg, prov_names, obs_names):
+    def _check_obsolete_not_provided(self, pkg, prov_names):
         """Check if a package has the obsoleted package still provided
         in spec file to avoid dependency breakage."""
+        obs_names = [x[0] for x in pkg.obsoletes]
         for dep_token in (var for var in obs_names if var not in prov_names):
             self.output.add_info('W', pkg, 'obsolete-not-provided', dep_token)
 
