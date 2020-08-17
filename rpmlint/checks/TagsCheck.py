@@ -612,7 +612,7 @@ class TagsCheck(AbstractCheck):
         For Ex:- Provides: foo and Provides: foo = 1.0
         """
 
-        # TODO: should take versions, <, <), =, >=, > into account here
+        # TODO: should take versions, <, <=, =, >=, > into account here
         #       https://bugzilla.redhat.com/460872
         useless_provides = set()
         for prov in prov_names:
