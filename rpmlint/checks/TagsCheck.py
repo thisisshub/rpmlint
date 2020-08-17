@@ -117,7 +117,7 @@ class TagsCheck(AbstractCheck):
         self._check_no_epoch_in_tags(pkg)
         self._check_multiple_dependencies(pkg, deps, is_devel, is_source)
         self._unexpanded_macros(pkg, 'Name', name)
-        self._check_no_name_tag(pkg, name, is_devel, is_source, deps, epoch, version)
+        self._check_multiple_tags(pkg, name, is_devel, is_source, deps, epoch, version)
         self._check_summary_tag(pkg, summary, langs, ignored_words)
         self._check_description_tag(pkg, description, langs, ignored_words)
         self._check_group_tag(pkg, group)
@@ -323,80 +323,87 @@ class TagsCheck(AbstractCheck):
                 self.output.add_info('W', pkg, 'requires-on-release', value)
             self._unexpanded_macros(pkg, 'dependency {}'.format(value,), value)
 
-    def _check_no_name_tag(self, pkg, name, is_devel,
-                           is_source, deps, epoch, version):
-        """This method contains checks
-        - no-name-tag,
-        - no-dependency-on,
-        - no-version-dependency-on
-        - incoherent-version-dependency-on
-        - no-major-in-name
-        - no-provides
-        - no-pkg-config-provides."""
-
-        # Check if a package does not have a Name: tag
+    def _check_multiple_tags(self, pkg, name, is_devel,
+                             is_source, deps, epoch, version):
+        """Contain no-name-tag check and gateway to _check_one method."""
         if not name:
+            # Check if a package does not have a Name: tag
             self.output.add_info('E', pkg, 'no-name-tag')
         else:
             if is_devel and not is_source:
-                base = is_devel.group(1)
-                dep = None
-                has_so = False
-                has_pc = False
-                for fname in pkg.files:
-                    if fname.endswith('.so'):
-                        has_so = True
-                    if pkg_config_regex.match(fname) and fname.endswith('.pc'):
-                        has_pc = True
-                if has_so:
-                    base_or_libs = base + '*' + '/' + base + '-libs/lib' + base + '*'
-                    # Try to match *%_isa as well (e.g. '(x86-64)', '(x86-32)')
-                    base_or_libs_re = re.compile(
-                        r'^(lib)?%s(-libs)?[\d_-]*(\(\w+-\d+\))?$' % re.escape(base))
-                    for deptoken in deps:
-                        if base_or_libs_re.match(deptoken[0]):
-                            dep = deptoken
-                            break
-                    # Check if a package installs modules of a
-                    # dependency but does not require dependency itself
-                    if not dep:
-                        self.output.add_info('W', pkg, 'no-dependency-on', base_or_libs)
-                    elif version:
-                        exp = (epoch, version, None)
-                        sexp = Pkg.versionToString(exp)
-                        if not dep[1]:
-                            self.output.add_info('W', pkg, 'no-version-dependency-on',
-                                                 base_or_libs, sexp)
-                        elif dep[2][:2] != exp[:2]:
-                            self.output.add_info('W', pkg,
-                                                 'incoherent-version-dependency-on',
-                                                 base_or_libs,
-                                                 Pkg.versionToString((dep[2][0],
-                                                                     dep[2][1], None)),
-                                                 sexp)
-                    res = devel_number_regex.search(name)
-                    # Check if a package does not contain a major number of the library in the spec file
-                    if not res:
-                        self.output.add_info('W', pkg, 'no-major-in-name', name)
-                    else:
-                        if res.group(3):
-                            prov = res.group(1) + res.group(2) + '-devel'
-                        else:
-                            prov = res.group(1) + '-devel'
-                        # Check if a package does not provide -devel name without major version included
-                        if prov not in (var[0] for var in pkg.provides):
-                            self.output.add_info('W', pkg, 'no-provides', prov)
+                # Gateway to _check_one method
+                self._check_one(pkg, is_devel, deps,
+                                name, epoch, version)
 
-                if has_pc:
-                    found_pkg_config_dep = False
-                    for pep in (var[0] for var in pkg.provides):
-                        if pep.startswith('pkgconfig('):
-                            found_pkg_config_dep = True
-                            break
-                    # Check if a package install .pc files but does
-                    # not provides a pkgconfig statement in spec file
-                    if not found_pkg_config_dep:
-                        self.output.add_info('E', pkg, 'no-pkg-config-provides')
+    def _check_one(self, pkg, is_devel, deps,
+                   name, epoch, version):
+        """Contain no-pkg-config-provides check and gateway to
+        _check_two method."""
+        base = is_devel.group(1)
+        dep = None
+        has_so = False
+        has_pc = False
+        for fname in pkg.files:
+            if fname.endswith('.so'):
+                has_so = True
+            if pkg_config_regex.match(fname) and fname.endswith('.pc'):
+                has_pc = True
+        if has_so:
+            base_or_libs = base + '*' + '/' + base + '-libs/lib' + base + '*'
+            # try to match *%_isa as well (e.g. '(x86-64)', '(x86-32)')
+            base_or_libs_re = re.compile(
+                r'^(lib)?%s(-libs)?[\d_-]*(\(\w+-\d+\))?$' % re.escape(base))
+            for deptoken in deps:
+                if base_or_libs_re.match(deptoken[0]):
+                    dep = deptoken
+                    break
+                # Gateway to _check_two method
+                self._check_two(pkg, has_pc, base_or_libs, dep,
+                                name, epoch, version)
+        if has_pc:
+            found_pkg_config_dep = False
+            for p in (x[0] for x in pkg.provides):
+                if p.startswith('pkgconfig('):
+                    found_pkg_config_dep = True
+                    break
+            # Check if a package install .pc files but does
+            # not provides a pkgconfig statement in spec file
+            if not found_pkg_config_dep:
+                self.output.add_info('E', pkg, 'no-pkg-config-provides')
+
+    def _check_two(self, pkg, has_pc, base_or_libs, dep,
+                   name, epoch, version):
+        """Contain check no-dependency-on, no-version-dependency-on,
+        incoherent-version-on."""
+        if not dep:
+            # Check if a package installs modules of a
+            # dependency but does not require dependency itself
+            self.output.add_info('W', pkg, 'no-dependency-on', base_or_libs)
+        elif version:
+            exp = (epoch, version, None)
+            sexp = Pkg.versionToString(exp)
+            if not dep[1]:
+                self.output.add_info('W', pkg, 'no-version-dependency-on',
+                                     base_or_libs, sexp)
+            elif dep[2][:2] != exp[:2]:
+                self.output.add_info('W', pkg,
+                                     'incoherent-version-dependency-on',
+                                     base_or_libs,
+                                     Pkg.versionToString((dep[2][0],
+                                                         dep[2][1], None)),
+                                     sexp)
+        res = devel_number_regex.search(name)
+        # Check if a package does not contain a major number of the library in the spec file
+        if not res:
+            self.output.add_info('W', pkg, 'no-major-in-name', name)
+        else:
+            if res.group(3):
+                prov = res.group(1) + res.group(2) + '-devel'
+            else:
+                prov = res.group(1) + '-devel'
+            # Check if a package does not provide -devel name without major version included
+            if prov not in (x[0] for x in pkg.provides):
+                self.output.add_info('W', pkg, 'no-provides', prov)
 
     def _check_summary_tag(self, pkg, summary, langs, ignored_words):
         """Check if a package does not have a summary tag."""
