@@ -115,7 +115,7 @@ class TagsCheck(AbstractCheck):
         self._check_non_standard_release_extension(pkg, release)
         self._check_no_epoch_tag(pkg, epoch)
         self._check_no_epoch_in_tags(pkg)
-        self._check_no_epoch_in_dependency(pkg, deps, is_devel, is_source)
+        self._check_multiple_dependencies(pkg, deps, is_devel, is_source)
         self._unexpanded_macros(pkg, 'Name', name)
         self._check_no_name_tag(pkg, name, is_devel, is_source, deps, epoch, version)
         self._check_summary_tag(pkg, summary, langs, ignored_words)
@@ -272,7 +272,7 @@ class TagsCheck(AbstractCheck):
                     self.output.add_info('W', pkg, 'no-epoch-in-{}'.format(tag),
                                          Pkg.formatRequire(*var))
 
-    def _check_no_epoch_in_dependency(self, pkg, deps, is_source, is_devel):
+    def _check_multiple_dependencies(self, pkg, deps, is_source, is_devel):
         """This method contains checks
         - no-epoch-in-dependency,
         - invalid-dependency,
