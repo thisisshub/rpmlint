@@ -38,7 +38,6 @@ class TagsCheck(AbstractCheck):
         self.valid_groups = config.configuration['ValidGroups']
         self.valid_licenses = config.configuration['ValidLicenses']
         self.invalid_requires = map(re.compile, config.configuration['InvalidRequires'])
-        self.packager_regex = re.compile(config.configuration['Packager'])
         self.release_ext = config.configuration['ReleaseExtension']
         self.extension_regex = self.release_ext and re.compile(self.release_ext)
         self.use_version_in_changelog = config.configuration['UseVersionInChangelog']
@@ -107,10 +106,9 @@ class TagsCheck(AbstractCheck):
         for pf in pkg.files:
             ignored_words.update(pf.split('/'))
         for tag in ('provides', 'requires', 'conflicts', 'obsoletes'):
-            ignored_words.update((var[0] for var in 'pkg.' + str(tag)))
+            ignored_words.update((x[0] for x in 'pkg.' + str(tag)))
 
         # Run checks for whole package
-        self._check_invalid_packager(pkg)
         self._check_invalid_version_and_no_version_tag(pkg, version)
         self._check_non_standard_release_extension(pkg, release)
         self._check_no_epoch_tag(pkg, epoch)
@@ -201,19 +199,6 @@ class TagsCheck(AbstractCheck):
                 self.output.add_info('W', pkg, 'name-repeated-in-summary', lang,
                                      res.group(1))
 
-    # TO BE DROPPED CHECKS: invalid-packager and no-packager-tag
-    def _check_invalid_packager(self, pkg):
-        """The packager email must end with an email compatible with the Packager
-        option of rpmlint. Please change it and rebuild your package."""
-        packager = pkg[rpm.RPMTAG_PACKAGER]
-        if packager:
-            self._unexpanded_macros(pkg, 'Packager', packager)
-            if self.config.configuration['Packager'] and \
-               not self.packager_regex.search(packager):
-                self.output.add_info('W', pkg, 'invalid-packager', packager)
-        else:
-            self.output.add_info('E', pkg, 'no-packager-tag')
-
     def _check_invalid_version_and_no_version_tag(self, pkg, version):
         """This method contains checks
         - invalid-version,
@@ -260,10 +245,10 @@ class TagsCheck(AbstractCheck):
         if self.use_epoch:
             for tag in ('obsoletes', 'conflicts', 'provides', 'recommends',
                         'suggests', 'enhances', 'supplements'):
-                for var in (var for var in getattr(pkg, tag)()
-                            if var[1] and var[2][0] is None):
+                for x in (x for x in getattr(pkg, tag)()
+                          if x[1] and x[2][0] is None):
                     self.output.add_info('W', pkg, 'no-epoch-in-{}'.format(tag),
-                                         Pkg.formatRequire(*var))
+                                         Pkg.formatRequire(*x))
 
     def _check_multiple_dependencies(self, pkg, deps, is_source, is_devel):
         """Contain multiple check,
@@ -582,7 +567,7 @@ class TagsCheck(AbstractCheck):
         """Check if a package has the obsoleted package still provided
         in spec file to avoid dependency breakage."""
         obs_names = [x[0] for x in pkg.obsoletes]
-        for dep_token in (var for var in obs_names if var not in prov_names):
+        for dep_token in (x for x in obs_names if x not in prov_names):
             self.output.add_info('W', pkg, 'obsolete-not-provided', dep_token)
 
     def _check_useless_provides(self, pkg, prov_names):
