@@ -200,9 +200,17 @@ class TagsCheck(AbstractCheck):
                                      res.group(1))
 
     def _check_invalid_version_and_no_version_tag(self, pkg, version):
-        """This method contains checks
-        - invalid-version,
-        - no-version-tag."""
+        """Trigger check invalid-version, no-version-tag.
+
+        Args:
+            pkg:
+                The pkg param is used to store the package name in STDOUT
+            version:
+                The version param is used to check value of Version: tag in rpm package
+
+        Returns:
+            Output info to STDOUT
+        """
 
         if version:
             self._unexpanded_macros(pkg, 'Version', version)
@@ -216,7 +224,14 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('E', pkg, 'no-version-tag')
 
     def _check_non_standard_release_extension(self, pkg, release):
-        """Contain check, not-standard-release-extension, no-release-tag."""
+        """Trigger check not-standard-release-extension, no-release-tag
+
+        Args:
+            release: The param checks the Realease: tag value
+
+        Returns:
+            Output info to STDOUT
+        """
         if release:
             self._unexpanded_macros(pkg, 'Release', release)
             # [This check is dynamically produced]
@@ -228,7 +243,14 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('E', pkg, 'no-release-tag')
 
     def _check_no_epoch_tag(self, pkg, epoch):
-        """Contain check no-epoch-tag, unreasonable-epoch."""
+        """Trigger check no-epoch-tag, unreasonable-epoch
+
+        Args:
+            epoch: The param checks the UseEpoch value in configdefaults
+
+        Returns:
+            Output info to STDOUT
+        """
         if epoch is None:
             # Check if a package does not contain an Epoch: tag
             if self.use_epoch:
@@ -240,8 +262,16 @@ class TagsCheck(AbstractCheck):
             epoch = str(epoch)
 
     def _check_no_epoch_in_tags(self, pkg):
-        """Check if versioned dependency is not used in tags even when
-        UseEpoch is set to true."""
+        """Trigger check no-epoch-in-{} multiple tags
+
+        Check if versioned dependency is not used in tags even when
+        UseEpoch is set to true and trigger checks in tags
+        ['Obsoletes', 'Conflicts', 'Provides', 'Recommends',
+            'Suggests', 'Enhances', 'Supplements']
+
+        Returns:
+            Output info to STDOUT
+        """
         if self.use_epoch:
             for tag in ('obsoletes', 'conflicts', 'provides', 'recommends',
                         'suggests', 'enhances', 'supplements'):
@@ -251,12 +281,23 @@ class TagsCheck(AbstractCheck):
                                          Pkg.formatRequire(*x))
 
     def _check_multiple_dependencies(self, pkg, deps, is_source, is_devel):
-        """Contain multiple check,
-        - no-epoch-in-dependency,
-        - invalid-dependency,
-        - invalid-build-requires,
-        - devel-dependency,
-        - explicit-devel-dependency."""
+        """Contain multiple check, no-epoch-in-dependency, invalid-dependency,
+        invalid-build-requires, devel-dependency, explicit-devel-dependency
+
+        Args:
+            deps:
+                The pkg.requires + pkg.prereq is stored in deps. Then dep is
+                used in deps to check tag(Requires, PreReq) values
+            is_source:
+                The param to check if a package is of source type
+            is_devel:
+                The param to check if a package name ends with *-devel
+
+        Returns:
+            Output info to STDOUT
+            example:
+                tmp.x86_64: W: requires-on-release foo = 2.1-1
+        """
 
         devel_depend = False
         for dep in deps:
@@ -303,14 +344,16 @@ class TagsCheck(AbstractCheck):
 
     def _check_multiple_tags(self, pkg, name, is_devel,
                              is_source, deps, epoch, version):
-        """Contain checks,
-        - no-name-tag check,
-        - no-dependency-on,
-        - no-version-dependency-on,
-        - incoherent-version-dependency-on,
-        - no-major-in-name,
-        - no-provides,
-        - no-pkg-config-provides."""
+        """Trigger checks no-name-tag check, no-dependency-on,
+        no-version-dependency-on, incoherent-version-dependency-on,
+        no-major-in-name, no-provides, no-pkg-config-provides
+
+        Args:
+            name: The param is used to check if name of the rpm package exists
+
+        Returns:
+            Output info to STDOUT
+        """
 
         if not name:
             # Check if a package does not have a Name: tag
@@ -372,7 +415,24 @@ class TagsCheck(AbstractCheck):
                         self.output.add_info('E', pkg, 'no-pkg-config-provides')
 
     def _check_summary_tag(self, pkg, summary, langs, ignored_words):
-        """Check if a package does not have a summary tag."""
+        """Trigger check no-summary-tag
+
+        Check if a package does not have a summary tag
+
+        Args:
+            summary:
+                The param is used to find Summary: tag
+            langs:
+                The param is used to find RPMTAG_HEADERI18NTABLE which
+                Contains a list of locales for which strings are provided in other parts of
+                the package.
+            ignored_words:
+                The param is used to check for ignored words list in the required tag
+                of the rpm package
+
+        Returns:
+            Output info to STDOUT
+        """
         if summary:
             if not langs:
                 self._unexpanded_macros(pkg, 'Summary', summary)
@@ -383,7 +443,15 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('E', pkg, 'no-summary-tag')
 
     def _check_description_tag(self, pkg, description, langs, ignored_words):
-        """Contain check description-shorter-than-summary, no-description-tag."""
+        """Trigger check description-shorter-than-summary, no-description-tag
+
+        Args:
+            description:
+                The param is used to find %description in rpm package
+
+        Returns:
+            Output info to STDOUT
+        """
         if description:
             if not langs:
                 self._unexpanded_macros(pkg, '%description', description)
@@ -399,8 +467,15 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('E', pkg, 'no-description-tag')
 
     def _check_group_tag(self, pkg, group):
-        """Contain check no-group-tag, devel-package-with-non-devel-group,
-        non-standard-group."""
+        """Trigger check no-group-tag, devel-package-with-non-devel-group,
+        non-standard-group
+
+        Args:
+            group: The param is used to find Group: TagsCheck
+
+        Returns:
+            Output info to STDOUT
+        """
         self._unexpanded_macros(pkg, 'Group', group)
         # Check if a package does not have a group tag
         if not group:
@@ -415,7 +490,14 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('W', pkg, 'non-standard-group', group)
 
     def _check_buildhost_tag(self, pkg, buildhost):
-        """Contain check no-buildhost-tag, invalid-buildhost."""
+        """Trigger check no-buildhost-tag, invalid-buildhost
+
+        Args:
+            buildhost: The param is used to find BuildHost: tag_regex
+
+        Returns:
+            Output info to STDOUT
+        """
         self._unexpanded_macros(pkg, 'BuildHost', buildhost)
         # Check if a package has no buildhost tag
         if not buildhost:
@@ -427,14 +509,18 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('W', pkg, 'invalid-buildhost', buildhost)
 
     def _check_changelog_tag(self, pkg, changelog, version, release, name, epoch):
-        """Contain multiple check,
-        - no-changelogname-tag,
-        - no-version-in-last-changelog,
-        - incoherent-version-in-changelog,
-        - tag-not-utf8,
-        - forbidden-controlchar-found,
-        - changelog-time-overflow,
-        - changelog-time-in-future."""
+        """Trigger multiple check of type *-changelog, *-changelogname-*, changelog-*
+        forbidden-controlchar and tag-not-utf8
+
+        Contains all the checks that cause an issue during build of the rpm
+        in the %changelog of the specfile
+
+        Args:
+            changelog: The param is used to find the %changelog in the specfile
+
+        Returns:
+            Output info to STDOUT
+        """
 
         # Check if a package does not have a %changelog in its spec file
         if not changelog:
@@ -494,7 +580,16 @@ class TagsCheck(AbstractCheck):
                                          time.strftime('%Y-%m-%d', time.gmtime(clt)))
 
     def _check_license(self, pkg, rpm_license):
-        """Contain check no-license, invalid-license-exception, invalid-license."""
+        """Trigger check no-license, invalid-license-exception, invalid-license
+
+        Checks are triggered due to the configuration set by the user in the confifdefaults.toml
+
+        Args:
+            rpm_license: The param is used to find License: tag in the rpm package
+
+        Returns:
+            Output info to STDOUT
+        """
 
         def split_license(text):
             return (x.strip() for x in
@@ -533,7 +628,7 @@ class TagsCheck(AbstractCheck):
                 self._unexpanded_macros(pkg, 'License', rpm_license)
 
     def _check_url(self, pkg):
-        """Contain check invalid-url, no-url-tag."""
+        """Trigger check invalid-url, no-url-tag """
         for tag in ('URL', 'DistURL', 'BugURL'):
             if hasattr(rpm, 'RPMTAG_{}'.format(tag.upper())):
                 url = byte_to_string(pkg[getattr(rpm, 'RPMTAG_{}'.format(tag.upper()))])
@@ -553,15 +648,28 @@ class TagsCheck(AbstractCheck):
 
     def _check_obsolete_not_provided(self, pkg, prov_names):
         """Check if a package has the obsoleted package still provided
-        in spec file to avoid dependency breakage."""
+        in spec file to avoid dependency breakage
+
+        Args:
+            prov_names: The param is used find the value in the Provides: tag in the specfile
+
+        Returns:
+            Output info to STDOUT
+        """
         obs_names = [x[0] for x in pkg.obsoletes]
         for dep_token in (x for x in obs_names if x not in prov_names):
             self.output.add_info('W', pkg, 'obsolete-not-provided', dep_token)
 
     def _check_useless_provides(self, pkg, prov_names):
-        """Check if a package has a multiple number of
-        Provides: of the same dependency
-        For Ex:- Provides: foo and Provides: foo = 1.0
+        """Trigger check useless-provides
+
+        Check if a package has a multiple number of Provides: of the same dependency
+        example:
+        Provides: foo
+        Provides: foo = 1.0
+
+        Returns:
+            Output info to STDOUT
         """
 
         # TODO: should take versions, <, <=, =, >=, > into account here
@@ -576,9 +684,15 @@ class TagsCheck(AbstractCheck):
             self.output.add_info('E', pkg, 'useless-provides', prov)
 
     def _check_forbidden_controlchar(self, pkg):
-        """Check if package contains a forbidden_words or character in
+        """Trigger check forbidden-controlchar-found
+
+        Check if package contains a forbidden_words or character in
         tags: Provides, Conflicts, Obsoletes,
-        Supplements, Suggests, Enhances, Recommends and Requires."""
+        Supplements, Suggests, Enhances, Recommends and Requires
+
+        Returns:
+            Output info to STDOUT
+        """
 
         for tagname, items in (
                 ('Provides', pkg.provides),
@@ -608,9 +722,15 @@ class TagsCheck(AbstractCheck):
                                          'Requires: {}'.format(dep))
 
     def _check_self_obsoletion(self, pkg):
-        """Check if a package does not obsoletes itself,
-        For Ex:-
-        Name: lib-devel and Obsoletes: lib-devel in its spec file."""
+        """Trigger check self-obsoletion
+
+        Check if a package does not obsoletes itself
+        example:
+        Name: lib-devel and Obsoletes: lib-devel in its spec file
+
+        Returns:
+        Output info to STDOUT
+        """
         obss = pkg.obsoletes
         if obss:
             provs = pkg.provides
@@ -623,8 +743,14 @@ class TagsCheck(AbstractCheck):
                                                                       Pkg.formatRequire(*prov)))
 
     def _check_non_coherent_filename(self, pkg):
-        """Check if a package has a
-        named <NAME>-<VERSION>-<RELEASE>.<ARCH>.rpm in this order."""
+        """Trigger check in non-coherent-filename
+
+        Check if a package has a
+        named <NAME>-<VERSION>-<RELEASE>.<ARCH>.rpm in this order
+
+        Returns:
+        Output info STDOUT
+        """
         expfmt = rpm.expandMacro('%{_build_name_fmt}')
         if pkg.is_source:
             # _build_name_fmt often (always?) ends up not outputting src/nosrc
