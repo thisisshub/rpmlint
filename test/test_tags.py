@@ -386,3 +386,19 @@ def test_package_dev_dependency(tmpdir, package, tagscheck):
     assert 'E: devel-dependency glibc-devel' in out
     # Test if a package does not have a Group tag
     assert 'W: non-standard-group Devel/Something' not in out
+
+
+@pytest.mark.parametrize('package', ['binary/no-buildhost-tag'])
+def test_check_no_buildhost_tag(tmpdir, package, tagscheck):
+    """Test if a package check,
+    - in out,
+        no-buildhost-tag.
+    """
+    CONFIG.info = True
+    CONFIG.configuration['ValidBuildHost'] = 'temp$'
+    output = Filter(CONFIG)
+    test = TagsCheck(CONFIG, output)
+    test.check(get_tested_package(package, tmpdir))
+    out = output.print_results(output.results)
+    # Test if a package has no BuildHost tag in the specfile
+    assert 'E: no-buildhost-tag' in out
